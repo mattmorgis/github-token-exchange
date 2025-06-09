@@ -3,9 +3,21 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 import jwt
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from jwt import PyJWKClient
 from pydantic import BaseModel
+
+load_dotenv()
+
+# GitHub OIDC token issuer and JWKS endpoint
+GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com"
+GITHUB_JWKS_URI = "https://token.actions.githubusercontent.com/.well-known/jwks"
+
+# Get GitHub App configuration from environment
+client_id = os.getenv("GITHUB_APP_CLIENT_ID")
+private_key = os.getenv("GITHUB_APP_PRIVATE_KEY")
+expected_audience = os.getenv("EXPECTED_AUDIENCE")
 
 
 class TokenExchangeRequest(BaseModel):
@@ -24,11 +36,6 @@ app = FastAPI(
 
 @app.post("/github/github-app-token-exchange")
 async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse:
-    # GitHub OIDC token issuer and JWKS endpoint
-    GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com"
-    GITHUB_JWKS_URI = "https://token.actions.githubusercontent.com/.well-known/jwks"
-    EXPECTED_AUDIENCE = "my-github-app"
-
     try:
         # Create a JWKS client to fetch GitHub's public keys
         jwks_client = PyJWKClient(GITHUB_JWKS_URI)
@@ -41,7 +48,7 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
             request.oidc_token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=EXPECTED_AUDIENCE,
+            audience=expected_audience,
             issuer=GITHUB_OIDC_ISSUER,
             options={"verify_exp": True},
         )
@@ -50,18 +57,14 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
         repository = payload.get("repository")
         repository_owner = payload.get("repository_owner")
 
-        # Get GitHub App configuration from environment
-        app_id = os.getenv("GITHUB_APP_ID")
-        private_key = os.getenv("GITHUB_APP_PRIVATE_KEY")
-
-        if not app_id or not private_key:
+        if not client_id or not private_key:
             raise HTTPException(
                 status_code=500, detail="GitHub App configuration missing"
             )
 
         # Check if the app is installed in the repository
         installation_id = await get_installation_id(
-            app_id, private_key, repository_owner, repository
+            client_id, private_key, repository_owner, repository
         )
 
         if not installation_id:
@@ -72,7 +75,7 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
 
         # Generate installation access token
         installation_token = await create_installation_access_token(
-            app_id, private_key, installation_id
+            client_id, private_key, installation_id
         )
 
         return TokenExchangeResponse(token=installation_token)
@@ -91,7 +94,7 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
         )
 
 
-async def create_jwt(app_id: str, private_key: str) -> str:
+async def create_jwt(client_id: str, private_key: str) -> str:
     """Create a JWT for GitHub App authentication."""
     # JWT expires in 10 minutes (GitHub's maximum)
     now = datetime.now(timezone.utc)
@@ -100,7 +103,7 @@ async def create_jwt(app_id: str, private_key: str) -> str:
     payload = {
         "iat": int(now.timestamp()),
         "exp": int(expiry.timestamp()),
-        "iss": app_id,
+        "iss": client_id,
     }
 
     # Ensure private key has proper line endings
@@ -111,11 +114,11 @@ async def create_jwt(app_id: str, private_key: str) -> str:
 
 
 async def get_installation_id(
-    app_id: str, private_key: str, owner: str, repo: str
+    client_id: str, private_key: str, owner: str, repo: str
 ) -> int | None:
     """Get the installation ID for a GitHub App in a specific repository."""
     # Create JWT for authentication
-    jwt_token = await create_jwt(app_id, private_key)
+    jwt_token = await create_jwt(client_id, private_key)
 
     async with httpx.AsyncClient() as client:
         # Check if app is installed in the repository
@@ -123,6 +126,7 @@ async def get_installation_id(
             f"https://api.github.com/repos/{owner}/{repo}/installation",
             headers={
                 "Authorization": f"Bearer {jwt_token}",
+                "Accept": "application/vnd.github.v3+json",
             },
         )
 
@@ -138,11 +142,11 @@ async def get_installation_id(
 
 
 async def create_installation_access_token(
-    app_id: str, private_key: str, installation_id: int
+    client_id: str, private_key: str, installation_id: int
 ) -> str:
     """Create an installation access token for the GitHub App."""
     # Create JWT for authentication
-    jwt_token = await create_jwt(app_id, private_key)
+    jwt_token = await create_jwt(client_id, private_key)
 
     async with httpx.AsyncClient() as client:
         # Create installation access token
@@ -151,7 +155,6 @@ async def create_installation_access_token(
             headers={
                 "Authorization": f"Bearer {jwt_token}",
                 "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "GitHub-Token-Exchange",
             },
             json={
                 # Token expires in 1 hour (default)
