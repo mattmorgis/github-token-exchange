@@ -13,6 +13,9 @@ jobs:
         run: |
           TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=oai-coding-agent-github-action" | jq -r '.value')
+          payload=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null)
+          jq '{iat,exp,aud,iss,repo_visibility?,repository_owner_id?}' <<<"$payload"
+          echo "TTL: $(( $(jq -r .exp <<<"$payload") - $(jq -r .iat <<<"$payload") )) seconds"
           echo "$TOKEN" > oidc_token.txt
       - name: Upload token as artifact
         uses: actions/upload-artifact@v4
