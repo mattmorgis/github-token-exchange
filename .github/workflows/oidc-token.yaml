@@ -12,7 +12,10 @@ jobs:
       - name: Get OIDC Token
         run: |
           TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=my-github-app" | jq -r '.value')
-          echo "::add-mask::$TOKEN"
-          echo "OIDC Token (copy this for local testing):"
-          echo "$TOKEN"
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=oai-coding-agent-github-action" | jq -r '.value')
+          echo "$TOKEN" > oidc_token.txt
+      - name: Upload token as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oidc-token
+          path: oidc_token.txt
