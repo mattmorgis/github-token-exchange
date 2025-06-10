@@ -14,7 +14,7 @@ def test_config_from_env_success() -> None:
             "GITHUB_APP_NAME": "test_name",
             "GITHUB_APP_CLIENT_ID": "test_id",
             "GITHUB_APP_PRIVATE_KEY": "test_key",
-            "EXPECTED_AUDIENCE": "test_aud",
+            "ALLOWED_AUDIENCE": "test_aud",
         },
     ):
         config = Config.from_env()

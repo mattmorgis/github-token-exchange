@@ -19,7 +19,7 @@ def config() -> Config:
         github_app_name="test_name",
         github_app_client_id="test_client_id",
         github_app_private_key="test_key",
-        expected_audience="test_audience",
+        allowed_audience="test_audience",
     )
 
 

@@ -21,7 +21,7 @@ def mock_config() -> Generator[Mock, None, None]:
         mock.return_value.github_app_name = "test_name"
         mock.return_value.github_app_client_id = "test_id"
         mock.return_value.github_app_private_key = "test_key"
-        mock.return_value.expected_audience = "test_audience"
+        mock.return_value.allowed_audience = "test_audience"
         yield mock
 
 

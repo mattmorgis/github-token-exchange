@@ -45,13 +45,13 @@ jobs:
     steps:
       - name: Get OIDC Token and Test Endpoint
         run: |
-          TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          ID_TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=my-github-app" | jq -r '.value')
-          
+
           # Test your local endpoint (using ngrok or similar)
           curl -X POST https://your-ngrok-url.ngrok.io/github/github-app-token-exchange \
             -H "Content-Type: application/json" \
-            -d "{\"oidc_token\": \"$TOKEN\"}"
+            -d "{\"oidc_token\": \"$ID_TOKEN\"}"
 ```
 
 ## Option 3: Mock Token for Development
@@ -68,11 +68,13 @@ if request.oidc_token == "LOCAL_DEV_TOKEN":
 ## Testing the Endpoint Locally
 
 1. Run your FastAPI app:
+
    ```bash
    uvicorn app.main:app --reload
    ```
 
 2. Test with a mock token:
+
    ```bash
    curl -X POST http://localhost:8000/github/github-app-token-exchange \
      -H "Content-Type: application/json" \

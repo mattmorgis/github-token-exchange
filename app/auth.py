@@ -63,7 +63,7 @@ async def validate_oidc_token(token: str, config: Config) -> dict[str, Any]:
             token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=config.expected_audience,
+            audience=config.allowed_audience,
             issuer=GITHUB_OIDC_ISSUER,
             options={"verify_exp": True},
         )
@@ -74,7 +74,7 @@ async def validate_oidc_token(token: str, config: Config) -> dict[str, Any]:
         raise TokenExpiredError("OIDC token has expired")
     except jwt.InvalidAudienceError:
         raise InvalidAudienceError(
-            f"Invalid OIDC token audience. Expected: {config.expected_audience}"
+            f"Invalid OIDC token audience. Expected: {config.allowed_audience}"
         )
     except jwt.InvalidIssuerError:
         raise InvalidIssuerError(

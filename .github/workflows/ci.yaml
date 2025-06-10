@@ -11,6 +11,9 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -38,3 +41,23 @@ jobs:
       - name: Run tests
         run: |
           uv run pytest
+
+      - name: Integration test
+        run: |
+          # Start service in background
+          uv run fastapi dev app/main.py --port 8000 &
+          sleep 5
+
+          # Get OIDC token and test the endpoint
+          TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=test" | jq -r '.value')
+
+          curl -f -X POST -H "Content-Type: application/json" \
+            -d "{\"oidc_token\": \"$TOKEN\"}" \
+            http://localhost:8000/github/github-app-token-exchange
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GITHUB_APP_CLIENT_ID: ${{ secrets.GITHUB_APP_CLIENT_ID }}
+          ALLOWED_AUDIENCE: "test"
+          ALLOWED_ISSUER: "https://token.actions.githubusercontent.com"
