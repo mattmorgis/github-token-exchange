@@ -4,16 +4,14 @@ A secure token exchange service that converts GitHub Actions OIDC tokens into [G
 
 ## Overview
 
-GitHub Actions workflows [can use OIDC tokens to authenticate with external services](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect?utm_source=chatgpt.com#updating-your-workflows-for-oidc), but sometimes you need the workflow to act as a GitHub App rather than using the default GITHUB_TOKEN. This service bridges that gap by:
-
-1. Receiving an OIDC token from a GitHub Actions workflow
-2. Validating the token with GitHub's OIDC provider
-3. Checking that your GitHub App is installed on the target repository
-4. Returning a short-lived access token signed with your App's private key
-
-The workflow can then use this access token to perform operations as the GitHub App, with all the benefits of App-based authentication (better rate limits, clearer audit trails, granular permissions).
+GitHub Actions workflows [can use OIDC tokens to authenticate with external services](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect?utm_source=chatgpt.com#updating-your-workflows-for-oidc). This service converts those OIDC tokens into GitHub App access tokens, allowing workflows to act as a GitHub App without requiring the App's private key to be stored in the repository(s).
 
 ## How It Works
+
+1. Receives an OIDC token from a GitHub Actions workflow
+2. Validates the token with GitHub's public keys and an `aud` check
+3. Creates a JWT signed with your app's private key and exchanges for an installation access token
+4. Returns a short-lived access token to perform operations as the GitHub App
 
 ```mermaid
 sequenceDiagram
@@ -24,9 +22,11 @@ sequenceDiagram
     GHA->>TE: POST /exchange with OIDC token
     TE->>GitHub: Validate OIDC token
     GitHub-->>TE: Token claims (repo, org, etc.)
-    TE->>GitHub: Check App installation
-    GitHub-->>TE: Installation confirmed
-    TE->>TE: Sign JWT with App's private key
-    TE-->>GHA: Return signed access token
-    GHA->>GitHub: Use signed token for API calls as GitHub App
+    TE->>GitHub: Get app installation for repo
+    GitHub-->>TE: Installation ID
+    TE->>TE: Create JWT with App private key
+    TE->>GitHub: Exchange JWT for access token
+    GitHub-->>TE: Installation access token
+    TE-->>GHA: Return access token
+    GHA->>GitHub: Use token for API calls
 ```
