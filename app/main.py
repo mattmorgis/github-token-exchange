@@ -1,3 +1,5 @@
+import logging
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -28,6 +30,12 @@ class TokenExchangeResponse(BaseModel):
 
 
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="GitHub App Token Exchange",
@@ -70,7 +78,7 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
                 "OIDC token missing required repository information"
             )
 
-        print(f"DEBUG: Successfully verified token for {repository}")
+        logger.info(f"Successfully verified token for {repository}")
 
         # Check if the app is installed in the repository
         installation_id = await get_installation_id(repository, config)
@@ -86,24 +94,24 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
         # Configuration errors
         raise HTTPException(status_code=500, detail=str(e))
     except TokenExpiredError as e:
-        print(f"DEBUG: {e}")
+        logger.warning(f"Token expired: {e}")
         raise HTTPException(status_code=401, detail=str(e))
     except (InvalidAudienceError, InvalidIssuerError, InvalidOIDCTokenError) as e:
-        print(f"DEBUG: {e}")
+        logger.warning(f"Token validation failed: {e}")
         raise HTTPException(status_code=401, detail=str(e))
     except GitHubAppNotInstalledError as e:
-        print(f"DEBUG: {e}")
+        logger.warning(f"GitHub App not installed: {e}")
         raise HTTPException(
             status_code=403,
             detail=str(e),
         )
     except (GitHubAPIError, InstallationTokenError) as e:
-        print(f"DEBUG: GitHub API error: {e}")
+        logger.error(f"GitHub API error: {e}")
         raise HTTPException(
             status_code=500, detail="Failed to communicate with GitHub API"
         )
     except Exception as e:
-        print(f"DEBUG: Unexpected error: {e}")
+        logger.error(f"Unexpected error during token exchange: {e}", exc_info=True)
         # Don't expose internal errors to users - log them but return generic message
         raise HTTPException(
             status_code=500,
