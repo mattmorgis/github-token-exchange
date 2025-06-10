@@ -13,9 +13,20 @@ jobs:
         run: |
           TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=oai-coding-agent-github-action" | jq -r '.value')
-          payload=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null)
-          jq '{iat,exp,aud,iss,repo_visibility?,repository_owner_id?}' <<<"$payload"
-          echo "TTL: $(( $(jq -r .exp <<<"$payload") - $(jq -r .iat <<<"$payload") )) seconds"
+
+          # helper that converts base64-URL → base64 and decodes with OpenSSL (no padding errors)
+          b64url_decode () {
+            printf '%s' "$1" | tr '_-' '/+' | openssl base64 -d -A 2>/dev/null
+          }
+
+          payload=$(b64url_decode "$(cut -d. -f2 <<<"$TOKEN")")
+
+          iat=$(jq -r '.iat' <<<"$payload")
+          exp=$(jq -r '.exp' <<<"$payload")
+          echo "iat : $iat"
+          echo "exp : $exp"
+          echo "TTL : $((exp - iat)) seconds"
+
           echo "$TOKEN" > oidc_token.txt
       - name: Upload token as artifact
         uses: actions/upload-artifact@v4
