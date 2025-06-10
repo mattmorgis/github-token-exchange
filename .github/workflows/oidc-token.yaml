@@ -13,21 +13,42 @@ jobs:
         run: |
           TOKEN=$(curl -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=oai-coding-agent-github-action" | jq -r '.value')
-
-          # helper that converts base64-URL → base64 and decodes with OpenSSL (no padding errors)
-          b64url_decode () {
-            printf '%s' "$1" | tr '_-' '/+' | openssl base64 -d -A 2>/dev/null
-          }
-
-          payload=$(b64url_decode "$(cut -d. -f2 <<<"$TOKEN")")
-
-          iat=$(jq -r '.iat' <<<"$payload")
-          exp=$(jq -r '.exp' <<<"$payload")
-          echo "iat : $iat"
-          echo "exp : $exp"
-          echo "TTL : $((exp - iat)) seconds"
-
           echo "$TOKEN" > oidc_token.txt
+
+          # Decode JWT payload (base64url decode the middle section)
+          PAYLOAD=$(echo "$TOKEN" | cut -d. -f2)
+          # Add padding if needed for base64 decoding
+          PADDED_PAYLOAD=$(echo "$PAYLOAD" | sed 's/-/+/g; s/_/\//g')
+          case $((${#PADDED_PAYLOAD} % 4)) in
+            2) PADDED_PAYLOAD="${PADDED_PAYLOAD}==" ;;
+            3) PADDED_PAYLOAD="${PADDED_PAYLOAD}=" ;;
+          esac
+
+          # Decode and extract expiration
+          DECODED=$(echo "$PADDED_PAYLOAD" | base64 -d 2>/dev/null | jq -r '.')
+          EXP_TIMESTAMP=$(echo "$DECODED" | jq -r '.exp')
+
+          # Convert to human-readable format
+          EXP_DATE=$(date -d "@$EXP_TIMESTAMP" -u)
+          CURRENT_DATE=$(date -u)
+
+          echo "=== OIDC Token Information ==="
+          echo "Current time (UTC): $CURRENT_DATE"
+          echo "Token expires at (UTC): $EXP_DATE"
+          echo "Expiration timestamp: $EXP_TIMESTAMP"
+
+          # Calculate time until expiration
+          CURRENT_TIMESTAMP=$(date +%s)
+          TIME_UNTIL_EXP=$((EXP_TIMESTAMP - CURRENT_TIMESTAMP))
+
+          if [ $TIME_UNTIL_EXP -gt 0 ]; then
+            MINUTES_UNTIL_EXP=$((TIME_UNTIL_EXP / 60))
+            echo "Time until expiration: ${TIME_UNTIL_EXP} seconds (${MINUTES_UNTIL_EXP} minutes)"
+          else
+            echo "⚠️  Token has already expired!"
+          fi
+          echo "=============================="
+
       - name: Upload token as artifact
         uses: actions/upload-artifact@v4
         with:
