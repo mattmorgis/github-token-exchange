@@ -1,0 +1,76 @@
+# Environment variables
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# UV cache
+.uv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Documentation (optional - remove if needed in container)
+README.md
+dev_tools/
+
+# Testing
+tests/
+pytest.ini
+tox.ini
+.tox/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Scripts (optional - remove if needed in container)
+scripts/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
