@@ -68,7 +68,7 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
         config = Config.from_env()
 
         # Validate the OIDC token
-        payload = await validate_oidc_token(request.oidc_token, config)
+        payload = validate_oidc_token(request.oidc_token, config)
 
         # Extract repository information
         repository = payload.get("repository")

@@ -34,7 +34,7 @@ class InvalidIssuerError(InvalidOIDCTokenError):
     pass
 
 
-async def validate_oidc_token(token: str, config: Config) -> dict[str, Any]:
+def validate_oidc_token(token: str, config: Config) -> dict[str, Any]:
     """
     Validate GitHub OIDC token and return payload.
 

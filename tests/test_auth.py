@@ -41,46 +41,42 @@ def mock_jwt_validation() -> Generator[Mock, None, None]:
         yield mock_decode
 
 
-async def test_validate_oidc_token_success(
-    config: Config, mock_jwt_validation: Mock
-) -> None:
+def test_validate_oidc_token_success(config: Config, mock_jwt_validation: Mock) -> None:
     """Should return payload when token is valid"""
     expected_payload = {"repository": "test-owner/test-repo"}
     mock_jwt_validation.return_value = expected_payload
 
-    result = await validate_oidc_token("valid.token", config)
+    result = validate_oidc_token("valid.token", config)
 
     assert result == expected_payload
 
 
-async def test_validate_oidc_token_expired(
-    config: Config, mock_jwt_validation: Mock
-) -> None:
+def test_validate_oidc_token_expired(config: Config, mock_jwt_validation: Mock) -> None:
     """Should raise TokenExpiredError when token expired"""
     mock_jwt_validation.side_effect = jwt.ExpiredSignatureError("Token expired")
 
     with pytest.raises(TokenExpiredError, match="OIDC token has expired"):
-        await validate_oidc_token("expired.token", config)
+        validate_oidc_token("expired.token", config)
 
 
-async def test_validate_oidc_token_wrong_audience(
+def test_validate_oidc_token_wrong_audience(
     config: Config, mock_jwt_validation: Mock
 ) -> None:
     """Should raise InvalidAudienceError when audience doesn't match"""
     mock_jwt_validation.side_effect = jwt.InvalidAudienceError("Wrong audience")
 
     with pytest.raises(InvalidAudienceError, match="Invalid OIDC token audience"):
-        await validate_oidc_token("wrong.audience.token", config)
+        validate_oidc_token("wrong.audience.token", config)
 
 
-async def test_validate_oidc_token_wrong_issuer(
+def test_validate_oidc_token_wrong_issuer(
     config: Config, mock_jwt_validation: Mock
 ) -> None:
     """Should raise InvalidIssuerError when issuer doesn't match"""
     mock_jwt_validation.side_effect = jwt.InvalidIssuerError("Wrong issuer")
 
     with pytest.raises(InvalidIssuerError, match="Invalid OIDC token issuer"):
-        await validate_oidc_token("wrong.issuer.token", config)
+        validate_oidc_token("wrong.issuer.token", config)
 
 
 async def test_validate_oidc_token_malformed(
@@ -90,14 +86,14 @@ async def test_validate_oidc_token_malformed(
     mock_jwt_validation.side_effect = jwt.InvalidTokenError("Invalid token format")
 
     with pytest.raises(InvalidOIDCTokenError, match="Invalid OIDC token"):
-        await validate_oidc_token("malformed.token", config)
+        validate_oidc_token("malformed.token", config)
 
 
-async def test_validate_oidc_token_unexpected_error(
+def test_validate_oidc_token_unexpected_error(
     config: Config, mock_jwt_validation: Mock
 ) -> None:
     """Should raise InvalidOIDCTokenError for unexpected errors"""
     mock_jwt_validation.side_effect = Exception("JWKS fetch failed")
 
     with pytest.raises(InvalidOIDCTokenError, match="Failed to validate OIDC token"):
-        await validate_oidc_token("some.token", config)
+        validate_oidc_token("some.token", config)
