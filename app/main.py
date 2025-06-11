@@ -43,6 +43,12 @@ app = FastAPI(
 )
 
 
+@app.get("/")
+@app.get("/health")
+def health_check() -> dict[str, str]:
+    return {"status": "healthy"}
+
+
 @app.post("/github/github-app-token-exchange")
 async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse:
     """
