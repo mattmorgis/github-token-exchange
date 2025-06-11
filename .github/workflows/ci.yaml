@@ -45,7 +45,7 @@ jobs:
       - name: Integration test
         run: |
           # Start service in background
-          uv run fastapi dev app/main.py --port 8000 &
+          uv run fastapi run --port 8000 &
           sleep 5
 
           # Get OIDC token and test the endpoint
@@ -56,8 +56,7 @@ jobs:
             -d "{\"oidc_token\": \"$TOKEN\"}" \
             http://localhost:8000/github/github-app-token-exchange
         env:
-          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
-          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
-          GITHUB_APP_CLIENT_ID: ${{ secrets.GITHUB_APP_CLIENT_ID }}
+          GITHUB_APP_NAME: "GHA OIDC Token Exchange"
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          GITHUB_APP_CLIENT_ID: "Iv23ligOPEIJDirDT4V5"
           ALLOWED_AUDIENCE: "test"
-          ALLOWED_ISSUER: "https://token.actions.githubusercontent.com"
