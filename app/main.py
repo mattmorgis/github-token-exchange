@@ -84,7 +84,7 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
                 "OIDC token missing required repository information"
             )
 
-        logger.info(f"Successfully verified token for {repository}")
+        logger.info(f"Successfully verified OIDC token for {repository}")
 
         # Check if the app is installed in the repository
         installation_id = await get_installation_id(repository, config)
@@ -93,6 +93,8 @@ async def exchange_token(request: TokenExchangeRequest) -> TokenExchangeResponse
         installation_token = await create_installation_access_token(
             installation_id, config
         )
+
+        logger.info(f"Successfully generated installation token for {repository}")
 
         return TokenExchangeResponse(token=installation_token)
 
