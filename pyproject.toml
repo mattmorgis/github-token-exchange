@@ -3,6 +3,7 @@ name = "github-token-exchange"
 version = "0.2.0"
 description = "Secure token exchange service: Convert GitHub Actions OIDC tokens to GitHub Application installation access tokens"
 readme = "README.md"
+license = {file = "LICENSE"}
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.115.12",
