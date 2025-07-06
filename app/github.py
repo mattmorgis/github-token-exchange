@@ -121,10 +121,6 @@ async def create_installation_access_token(installation_id: int, config: Config)
                 "Authorization": f"Bearer {jwt_token}",
                 "Accept": "application/vnd.github.v3+json",
             },
-            json={
-                # Token expires in 1 hour (default)
-                # You can add permissions and repositories here if needed
-            },
         )
 
         if response.status_code == 201:
