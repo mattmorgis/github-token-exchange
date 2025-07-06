@@ -1,6 +1,6 @@
 [project]
 name = "github-token-exchange"
-version = "0.2.0"
+version = "0.2.1"
 description = "Secure token exchange service: Convert GitHub Actions OIDC tokens to GitHub Application installation access tokens"
 readme = "README.md"
 license = {file = "LICENSE"}
