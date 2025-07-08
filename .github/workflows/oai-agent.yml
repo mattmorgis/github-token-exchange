@@ -193,10 +193,13 @@ jobs:
           git checkout "$BRANCH"
 
       # Enter your own repo set up here
-      # - name: Install dependencies
-      #   run: |
-      #     uv sync
-      #     npm install
+      - name: Install dependencies
+        run: |
+          uv sync
+
+      - name: Install Git hooks
+        run: |
+          uv run pre-commit install
 
       - name: Run oai coding agent
         env:
